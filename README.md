@@ -99,6 +99,12 @@ sudo nano /etc/rc.local
 ```zsh
 tar -xvzf your-file.tar.gz
 ```
+
+**Executable**:
+
+```zsh
+chmod +x ./pi/scripts/*
+```
   
 ## VNC
 
@@ -127,6 +133,10 @@ sudo raspi-config
 #### Using Pi's GPIO pins
 
 ![gpio](images/gpio.png)
+
+**Model 3B**:
+
+![gpio](images/gpio-3b.jpg)
 
 ## OpenFrameworks
 
@@ -179,6 +189,7 @@ Test GPIO ultrasonic sensor
 * Cloned, installed, built: `of_v0.10.1_linuxarmv6l_release`
 * Installed `tinyvncserver omxplayer openssh-server git`
 * HFS+ for Mac USB: `hfsplus hfsutils hfsprogs`
+* Install `python-dev pip hcsr04sensor`
 * Desktop GUI via:
   * `sudo apt-get install --no-install-recommends xserver-xorg`
   * `sudo apt-get install --no-install-recommends xinit`
