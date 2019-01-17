@@ -8,7 +8,7 @@
 
 Copies to a smaller attached USB or card
 
-[rpishrink](https://github.com/billw2/rpi-clone)
+[rpi-clone](https://github.com/billw2/rpi-clone)
 
 ```zsh
 # View disks
@@ -20,7 +20,7 @@ cd rpi-clone
 
 sudo cp rpi-clone rpi-clone-setup /usr/local/sbin
 # Run
-rpi-clone
+sudo rpi-clone sdX
 ```
 
 **On Ubuntu**:
@@ -104,6 +104,17 @@ tar -xvzf your-file.tar.gz
 
 ```zsh
 chmod +x ./pi/scripts/*
+
+**See package version**:
+
+```zsh
+dpkg -l openssl
+```
+
+**Install certain package**:
+
+```zsh
+sudo apt-get install openssl=1.0.2
 ```
   
 ## VNC
@@ -149,7 +160,24 @@ Cross compiling w. ofNode
   * Can Strech instead of Jessie
   * `bs=1M` not `bs=1m`
 
+**Mount in READ-ONLY**:
 
+```zsh
+# Make copy
+sudo dd bs=1M if=/dev/sdb of=raspi-stretch+of+ofnode-cross-compiler.img status=progress
+
+# View offset
+fdisk -lu raspi-stretch+of+ofnode-cross-compiler.img
+
+# Second row "Start" value 94208  * 512 = 48234496
+mkdir /tmp/rpi
+mkdir /tmp/rpi/root
+sudo mount -o loop,offset=48234496,rw,sync raspi-stretch+of+ofnode-cross-compiler.img /tmp/rpi/root
+```
+```
+# OpenSSL must be 1.0.2 not 1.1.0
+
+```
 
 ## Scripts
 
@@ -195,4 +223,9 @@ Test GPIO ultrasonic sensor
   * `sudo apt-get install --no-install-recommends xinit`
   * `sudo apt-get install raspberrypi-ui-mods`
   * `sudo apt-get install lightdm`
+* Install Vivaldi Browser
+* GPU RAM to 128m
+* Install `usbmount` and set service `sudo nano /lib/systemd/system/systemd-udevd.service`
 * Did `autoremove && clean` to reduce size
+
+_Recommended Sandisk UHS-I SD Card_
