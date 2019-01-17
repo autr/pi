@@ -4,44 +4,24 @@ import processing.io.*;
 GLMovie video1;
 GLMovie video2;
 
-int triggerPin = 12;
-int echoPin = 11;
+int TRIGGER_PIN = 12;
+int ECHO_PIN = 11;
 
 float startTime = 0;
 float endTime = 0;
 
-String[] searchLocations = {"~/Video", "/Users/gilbertsinnott/Google Drive/-- Autr --/-- Videos --/__Instas/", "/media"};
-File[] videos = new File[2];
-
 void setup() {
   size(560, 203, P2D);
   
-  //fullScreen)
   
-  int count = 0;
-  for (int i = 0; i < searchLocations.length; i++) {
-     File[] files = listFiles(searchLocations[i]);
-     if (files != null) {
-       for (int ii = 0; ii < files.length; ii++) {
-          File f = files[ii];    
-          String n = f.getName();
-          String p = f.getAbsolutePath();
-          
-          if (n.endsWith(".mov")||n.endsWith(".mp4")) {
-            if (count < 2 ) {
-              videos[count] = f;
-              count += 1;
-            }
-          }
-       }
-     }
-  }
+  int maxVideos = 2;
+  String[] whereToLook = {"~/Video", "/media"};
+  File[] videos = fetchVideoFiles(whereToLook, maxVideos);
   
   for (int i = 0; i < videos.length; i++) {
       
-    File f = videos[i];    
-    println(f.getName());
-    
+    File f = videos[i]; 
+    if (f != null) println(f.getName());
   }
   
   video1 = new GLMovie(this, videos[0].getAbsolutePath(), GLVideo.MUTE);
@@ -53,10 +33,10 @@ void setup() {
   println("Waiting for sensor to settle");
   /*-- GPIO --*/
   
-  GPIO.pinMode(triggerPin, GPIO.OUTPUT);
-  GPIO.pinMode(echoPin, GPIO.INPUT);
+  GPIO.pinMode(TRIGGER_PIN, GPIO.OUTPUT);
+  GPIO.pinMode(ECHO_PIN, GPIO.INPUT);
   
-  GPIO.digitalWrite(triggerPin, GPIO.LOW);
+  GPIO.digitalWrite(TRIGGER_PIN, GPIO.LOW);
   delay(2000);
   
 }
@@ -64,8 +44,24 @@ void setup() {
 
 void draw() {
   
-  //println("HEY");
+  float distance = getUltrasonicDistance(TRIGGER_PIN, ECHO_PIN);
+  println( "Distance", round(distance) );
   
+  background(0);
+  
+  //if (video1.available()) {
+  //  video1.read();
+  //}
+  //if (video2.available()) {
+  //  video2.read();
+  //}
+  //image(video1, 0, 0, width/2, height);
+  //image(video2, width/2, 0, width/2, height);
+}
+
+
+float getUltrasonicDistance(int triggerPin, int echoPin) {
+
   GPIO.digitalWrite(triggerPin, GPIO.HIGH);
   delay(1);
   GPIO.digitalWrite(triggerPin, GPIO.LOW);
@@ -75,17 +71,40 @@ void draw() {
   
   float duration = endTime - startTime;
   float distance = duration * 17150;
+  return distance;
+}
+
+File[] fetchVideoFiles(String[] searchLocations, int maximum) {
   
-  println( "Distance", round(distance) );
+  File[] vids = new File[maximum]; // Prepopulate array
+  int count = 0; // Counter for each video
   
+  /*-- Loop over each search location --*/
   
-  background(0);
-  //if (video1.available()) {
-  //  video1.read();
-  //}
-  //if (video2.available()) {
-  //  video2.read();
-  //}
-  //image(video1, 0, 0, width/2, height);
-  //image(video2, width/2, 0, width/2, height);
+  for (int i = 0; i < searchLocations.length; i++) {
+     File[] files = listFiles(searchLocations[i]);
+     if (files != null) {
+       
+       /*-- Loop over each file --*/
+       
+       for (int ii = 0; ii < files.length; ii++) {
+          File f = files[ii];    
+          String n = f.getName();
+          String p = f.getAbsolutePath();
+          
+          /*-- Check if file is a video --*/
+          
+          if (n.endsWith(".mov")||n.endsWith(".mp4")) {
+            
+            /*-- Make sure we are within maximum --*/
+            
+            if (count < maximum ) {
+              vids[count] = f;
+              count += 1;
+            }
+          }
+       }
+     }
+  }
+  return vids;
 }
