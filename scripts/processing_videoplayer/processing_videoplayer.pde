@@ -1,21 +1,79 @@
 import gohai.glvideo.*;
 import processing.io.*;
+import oscP5.*;
+
+OscP5 oscP5;
 
 GLMovie video1;
 GLMovie video2;
 
-int TRIGGER_PIN = 12;
-int ECHO_PIN = 11;
-
-float startTime = 0;
-float endTime = 0;
+boolean restart = false; // restart video on each change
+float distance = 0; // incoming sensor
+String currentVideo = "A"; // video A or B
+float triggerDistance = 100; //cm
+float timeLimit = 2; //seconds
+float timeStamp = 0; //last change time
 
 void setup() {
-  size(560, 203, P2D);
+  //size(560, 203, P2D);
+  fullScreen(P2D);
   
+  oscP5 = new OscP5(this,7000);
+  
+  setupVideos();
+  
+}
+
+void draw() {
+  
+  background(0);
+  
+  
+  if (millis() - timeStamp > timeLimit) {
+    
+    if ((distance < triggerDistance)&&(currentVideo != "A")) {
+      
+      timeStamp = millis();
+      currentVideo = "A";
+    }
+    if ((distance >= triggerDistance)&&(currentVideo != "B")) {
+      
+      timeStamp = millis();
+      currentVideo = "B";
+    }
+    
+  }
+  
+  
+  if (video1.available()) {
+    video1.read();
+  }
+  if (video2.available()) {
+    video2.read();
+  }
+  
+  
+  if (currentVideo == "A") image(video1, 0, 0, width, height);
+  if (currentVideo == "B") image(video2, width, 0, width, height);
+  
+  
+}
+
+
+/* incoming osc message are forwarded to the oscEvent method. */
+void oscEvent(OscMessage msg) {
+  
+  if (msg.checkAddrPattern("/Ultrasonic")) {
+    println("Ultrasonic", msg.get(0).floatValue());
+    distance =  msg.get(0).floatValue();
+    
+  }
+}
+
+void setupVideos() {
   
   int maxVideos = 2;
-  String[] whereToLook = {"~/Video", "/media"};
+  String[] whereToLook = {"~/Video", "/media/pi/USB"};
   File[] videos = fetchVideoFiles(whereToLook, maxVideos);
   
   for (int i = 0; i < videos.length; i++) {
@@ -24,55 +82,19 @@ void setup() {
     if (f != null) println(f.getName());
   }
   
-  video1 = new GLMovie(this, videos[0].getAbsolutePath(), GLVideo.MUTE);
-  video2 = new GLMovie(this, videos[1].getAbsolutePath(), GLVideo.MUTE);
-  video2.jump(2.0);
-  video1.loop();
-  video2.loop();
+  if (videos[0] != null && videos[1] != null) {
   
-  println("Waiting for sensor to settle");
-  /*-- GPIO --*/
+    video1 = new GLMovie(this, videos[0].getAbsolutePath(), GLVideo.MUTE);
+    video2 = new GLMovie(this, videos[1].getAbsolutePath(), GLVideo.MUTE);
+    video2.jump(2.0);
+    video1.loop();
+    video2.loop();
   
-  GPIO.pinMode(TRIGGER_PIN, GPIO.OUTPUT);
-  GPIO.pinMode(ECHO_PIN, GPIO.INPUT);
-  
-  GPIO.digitalWrite(TRIGGER_PIN, GPIO.LOW);
-  delay(2000);
-  
+  } else {
+    println("No Videos");
+  }
 }
 
-
-void draw() {
-  
-  float distance = getUltrasonicDistance(TRIGGER_PIN, ECHO_PIN);
-  println( "Distance", round(distance) );
-  
-  background(0);
-  
-  //if (video1.available()) {
-  //  video1.read();
-  //}
-  //if (video2.available()) {
-  //  video2.read();
-  //}
-  //image(video1, 0, 0, width/2, height);
-  //image(video2, width/2, 0, width/2, height);
-}
-
-
-float getUltrasonicDistance(int triggerPin, int echoPin) {
-
-  GPIO.digitalWrite(triggerPin, GPIO.HIGH);
-  delay(1);
-  GPIO.digitalWrite(triggerPin, GPIO.LOW);
-  
-  while(GPIO.digitalRead(echoPin) == 0) startTime = millis();
-  while(GPIO.digitalRead(echoPin) == 1) endTime = millis();
-  
-  float duration = endTime - startTime;
-  float distance = duration * 17150;
-  return distance;
-}
 
 File[] fetchVideoFiles(String[] searchLocations, int maximum) {
   
@@ -83,6 +105,7 @@ File[] fetchVideoFiles(String[] searchLocations, int maximum) {
   
   for (int i = 0; i < searchLocations.length; i++) {
      File[] files = listFiles(searchLocations[i]);
+     //ArrayList<File> allFiles = listFilesRecursive("/test");
      if (files != null) {
        
        /*-- Loop over each file --*/
