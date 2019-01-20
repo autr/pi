@@ -7,92 +7,153 @@ OscP5 oscP5;
 GLMovie video1;
 GLMovie video2;
 
-boolean restart = false; // restart video on each change
 float distance = 0; // incoming sensor
+float triggerDistance = 0; //cm
+float smoothing = 0.9;
+
+float timeLimit = 1000; //seconds
+float timeStamp = 0; // last change time
+
 String currentVideo = "A"; // video A or B
-float triggerDistance = 100; //cm
-float timeLimit = 2; //seconds
-float timeStamp = 0; //last change time
+String proposedVideo = "A";
+
+boolean isReceiving = false;
+float receivingTimestamp = 0;
+boolean isCalibrated = false;
+
+boolean showOverlay = false;
+
+PFont f;
 
 void setup() {
-  //size(560, 203, P2D);
+
   fullScreen(P2D);
-  
+
   oscP5 = new OscP5(this,7000);
   
-  setupVideos();
+  /*-- Search for videos --*/
+
+  int maxVideos = 2;
+  String[] whereToLook = {"~/Video", "/media/pi/USB"};
+  File[] videos = fetchVideoFiles(whereToLook, maxVideos);
+  
+  for (int i = 0; i < videos.length; i++) {
+    File f = videos[i];
+  }
+  
+  if (videos[0] != null && videos[1] != null) {
+  
+    String pathA = videos[0].getAbsolutePath();
+    String pathB = videos[1].getAbsolutePath();
+
+    video1 = new GLMovie(this, pathA, GLVideo.MUTE);
+    video2 = new GLMovie(this, pathB, GLVideo.MUTE);
+
+    video1.loop();
+    video2.loop();
+
+    println("Using videos", pathA, pathB);
+  
+  } else {
+    println("No Videos");
+  }
+
+  f = createFont("Arial",32,true); 
   
 }
 
 void draw() {
   
   background(0);
+  textFont(f,32);
+  fill(255);  
+
+  /*-- 1) No OSC messages received yet ... --*/
+
+  if (!isReceiving) {
+
+    text("Waiting for OSC...",100,100);
+
+    return;
+  }
+
+  /*-- 2) Calibrating triggerDistance with incoming values --*/
+
+  if (isReceiving && !isCalibrated) {
+
+    triggerDistance += distance;
+    triggerDistance /= 2;
+
+    text("Calibrating trigger distance: " + str(triggerDistance) + "cm",100,100);
+
+    if (millis() - receivingTimestamp > 10000) isCalibrated = true;
+
+    return;
+  }
+
+  /*-- 3) Playback videos --*/
   
   
+    
+  if ((distance < triggerDistance)&&(proposedVideo != "A")) {
+    
+    timeStamp = millis();
+    proposedVideo = "A";
+  }
+
+  if ((distance > triggerDistance)&&(proposedVideo != "B")) {
+    timeStamp = millis();
+    proposedVideo = "B";
+  }
+    
   if (millis() - timeStamp > timeLimit) {
-    
-    if ((distance < triggerDistance)&&(currentVideo != "A")) {
-      
-      timeStamp = millis();
-      currentVideo = "A";
+    if (proposedVideo != currentVideo) {
+      currentVideo = proposedVideo;
+      println("Trigger", currentVideo);
     }
-    if ((distance >= triggerDistance)&&(currentVideo != "B")) {
-      
-      timeStamp = millis();
-      currentVideo = "B";
-    }
-    
   }
   
   
-  if (video1.available()) {
-    video1.read();
+  if (video1.available()) video1.read();
+  if (video2.available()) video2.read();
+  
+  if (currentVideo == "A") {
+    image(video1, 0, 0, width, height);
+    video1.volume(1);
+    video2.volume(0);
   }
-  if (video2.available()) {
-    video2.read();
+  if (currentVideo == "B") {
+    image(video2, 0, 0, width, height);
+    video1.volume(0);
+    video2.volume(1);
   }
-  
-  
-  if (currentVideo == "A") image(video1, 0, 0, width, height);
-  if (currentVideo == "B") image(video2, width, 0, width, height);
-  
-  
+
+  text("Trigger distance: " + str(round(triggerDistance)) + "cm",100,100);
+  text("Current distance: " + str(round(distance)) + "cm",100,200);
+  text("Current video: " + currentVideo,100,300);
+
+  fill(0);
+  rect(100, 400, width - 200, 60);
+  fill(255);
+  rect(110, 410, distance, 40);
 }
 
-
-/* incoming osc message are forwarded to the oscEvent method. */
 void oscEvent(OscMessage msg) {
   
   if (msg.checkAddrPattern("/Ultrasonic")) {
-    println("Ultrasonic", msg.get(0).floatValue());
-    distance =  msg.get(0).floatValue();
-    
+
+    if (!isReceiving) {
+      distance = msg.get(0).floatValue();
+      triggerDistance = distance;
+      isReceiving = true;
+      receivingTimestamp = millis();
+    }
+
+    distance =  (distance * smoothing) + (msg.get(0).floatValue() * (1 - smoothing));
   }
 }
-
-void setupVideos() {
-  
-  int maxVideos = 2;
-  String[] whereToLook = {"~/Video", "/media/pi/USB"};
-  File[] videos = fetchVideoFiles(whereToLook, maxVideos);
-  
-  for (int i = 0; i < videos.length; i++) {
-      
-    File f = videos[i]; 
-    if (f != null) println(f.getName());
-  }
-  
-  if (videos[0] != null && videos[1] != null) {
-  
-    video1 = new GLMovie(this, videos[0].getAbsolutePath(), GLVideo.MUTE);
-    video2 = new GLMovie(this, videos[1].getAbsolutePath(), GLVideo.MUTE);
-    video2.jump(2.0);
-    video1.loop();
-    video2.loop();
-  
-  } else {
-    println("No Videos");
-  }
+void keyPressed() {
+  showOverlay = !showOverlay;
 }
 
 
