@@ -9,9 +9,9 @@ GLMovie video2;
 
 float distance = 0; // incoming sensor
 float triggerDistance = 0; //cm
-float smoothing = 0.9;
+float smoothing = 0.8;
 
-float timeLimit = 1000; //seconds
+float timeLimit = 1000; //milliseconds
 float timeStamp = 0; // last change time
 
 String currentVideo = "A"; // video A or B
@@ -19,15 +19,25 @@ String proposedVideo = "A";
 
 boolean isReceiving = false;
 float receivingTimestamp = 0;
+float calibratedTimestamp = 0;
 boolean isCalibrated = false;
 
-boolean showOverlay = false;
+boolean isShowingInformation = true;
+
+
+int triggerPin = 12;
+int echoPin = 11;
+
+float startTime = 0;
+float endTime = 0;
+float distGPIO = 0;
 
 PFont f;
 
 void setup() {
 
   fullScreen(P2D);
+  //size(200,200, P2D);
 
   oscP5 = new OscP5(this,7000);
   
@@ -59,14 +69,38 @@ void setup() {
   }
 
   f = createFont("Arial",32,true); 
+
+  //GPIO.pinMode(triggerPin, GPIO.OUTPUT);
+  //GPIO.pinMode(echoPin, GPIO.INPUT);
+  
+  //GPIO.digitalWrite(triggerPin, GPIO.LOW);
+  //delay(2000);
   
 }
 
+void getDistance() {
+
+  GPIO.digitalWrite(triggerPin, GPIO.HIGH);
+  delay(1);
+  GPIO.digitalWrite(triggerPin, GPIO.LOW);
+
+  while(GPIO.digitalRead(echoPin) == 0) startTime = millis();
+  while(GPIO.digitalRead(echoPin) == 1) endTime = millis();
+
+  delay(50);
+  distGPIO = (endTime - startTime) * 17150;
+}
+
 void draw() {
+
+
+  //thread("getDistance");
+
   
   background(0);
   textFont(f,32);
   fill(255);  
+  //text("GPIO dist: " + distGPIO,100,400);
 
   /*-- 1) No OSC messages received yet ... --*/
 
@@ -84,35 +118,59 @@ void draw() {
     triggerDistance += distance;
     triggerDistance /= 2;
 
-    text("Calibrating trigger distance: " + str(triggerDistance) + "cm",100,100);
+    text("Calibrating trigger distance: " + str(round(triggerDistance)) + "cm",100,100);
 
-    if (millis() - receivingTimestamp > 10000) isCalibrated = true;
+    if (millis() - receivingTimestamp > 10000) {
+      isCalibrated = true;
+      calibratedTimestamp = millis();
+    }
+
+    return;
+  }
+
+    
+  if ( (millis() - timeStamp) > timeLimit) {
+    // if (proposedVideo != currentVideo) {
+    //   currentVideo = proposedVideo;
+    //   println("Trigger", currentVideo);
+    // }
+    if ((distance < triggerDistance)&&(currentVideo != "A")) {
+      
+      timeStamp = millis();
+      currentVideo = "A";
+    }
+
+    if ((distance > triggerDistance)&&(currentVideo != "B")) {
+      timeStamp = millis();
+      currentVideo = "B";
+    }
+  }
+
+
+  if (isShowingInformation) {
+
+    text("Trigger distance: " + str(round(triggerDistance)) + "cm",100,100);
+    text("Current distance: " + str(round(distance)) + "cm",100,200);
+
+    fill(0);
+    rect(100, 260, width - 200, 60);
+    fill(255);
+    rect(110, 270, distance, 40);
+    fill(255, 0, 0);
+    rect(100 + triggerDistance - 2, 260, 4, 60);
+
+    fill(255);
+    text("Current video: " + currentVideo,100,400);
+
+
+    if (millis() - calibratedTimestamp > 60000) {
+      isShowingInformation = false;
+    }
 
     return;
   }
 
   /*-- 3) Playback videos --*/
-  
-  
-    
-  if ((distance < triggerDistance)&&(proposedVideo != "A")) {
-    
-    timeStamp = millis();
-    proposedVideo = "A";
-  }
-
-  if ((distance > triggerDistance)&&(proposedVideo != "B")) {
-    timeStamp = millis();
-    proposedVideo = "B";
-  }
-    
-  if (millis() - timeStamp > timeLimit) {
-    if (proposedVideo != currentVideo) {
-      currentVideo = proposedVideo;
-      println("Trigger", currentVideo);
-    }
-  }
-  
   
   if (video1.available()) video1.read();
   if (video2.available()) video2.read();
@@ -128,14 +186,6 @@ void draw() {
     video2.volume(1);
   }
 
-  text("Trigger distance: " + str(round(triggerDistance)) + "cm",100,100);
-  text("Current distance: " + str(round(distance)) + "cm",100,200);
-  text("Current video: " + currentVideo,100,300);
-
-  fill(0);
-  rect(100, 400, width - 200, 60);
-  fill(255);
-  rect(110, 410, distance, 40);
 }
 
 void oscEvent(OscMessage msg) {
@@ -151,9 +201,6 @@ void oscEvent(OscMessage msg) {
 
     distance =  (distance * smoothing) + (msg.get(0).floatValue() * (1 - smoothing));
   }
-}
-void keyPressed() {
-  showOverlay = !showOverlay;
 }
 
 

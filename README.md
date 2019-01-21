@@ -58,9 +58,13 @@ Copies entire disk + __setup first installation of Raspbian__
 **Update all**:
 
 ```zsh
+# Update all
 sudo apt-get update
 sudo apt-get -y upgrade
 sudo rpi-update
+
+# Update raspi-config
+sudo raspi-config # and select Update
 ```
 
 **Clear up**:
@@ -116,6 +120,15 @@ dpkg -l openssl
 ```zsh
 sudo apt-get install openssl=1.0.2
 ```
+
+**See filesizes**
+
+```zsh
+# Install:
+sudo apt-get install ncdu
+# Usage:
+ncdu
+```
   
 ## VNC
 
@@ -142,6 +155,14 @@ sudo raspi-config
 ## GPIO
 
 #### Using Pi's GPIO pins
+
+**Add user to GPIO usergroup**
+
+Fixes permission denied errors when using GPIO
+
+```zsh
+sudo adduser pi gpio
+```
 
 ![gpio](images/gpio.png)
 
