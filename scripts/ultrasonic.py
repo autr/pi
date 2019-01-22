@@ -49,7 +49,7 @@ try:
 
             while GPIO.input(PIN_ECHO)==1:
                   pulse_end_time = time.time()
-
+ 
             pulse_duration = pulse_end_time - pulse_start_time
  
 
