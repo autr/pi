@@ -95,7 +95,12 @@ dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
 **Do something on startup**:
 
 ```zsh
+# For terminal
 sudo nano /etc/rc.local
+# For GUI
+sudo nano /etc/xdg/lxsession/LXDE-pi/autostart
+# @sudo /home/pi/myscript.sh etc...
+# Weirdly only sudo works for apps / python scripts
 ```
 
 **Unpack a tar.gz**:
@@ -132,7 +137,13 @@ ncdu
   
 ## VNC
 
-#### Controlling Pi via VNC Server
+#### Remote Desktop login for Pi
+
+When running headless without a HDMI connection to the Pi, change framebuffer width and height to something more usable:
+
+```
+sudo nano /boot/config.txt
+```
 
 **Show Pi in Mac Finder**:
 

@@ -37,6 +37,8 @@ PFont f;
 void setup() {
 
   fullScreen(P2D);
+  
+  Process p = exec("/usr/bin/python /home/pi/pi/scripts/ultrasonic_osc.py"); 
   //size(200,200, P2D);
 
   oscP5 = new OscP5(this,7000);
@@ -122,6 +124,7 @@ void draw() {
 
     if (millis() - receivingTimestamp > 10000) {
       isCalibrated = true;
+      triggerDistance -= 2;
       calibratedTimestamp = millis();
     }
 
@@ -140,7 +143,7 @@ void draw() {
       currentVideo = "A";
     }
 
-    if ((distance > triggerDistance)&&(currentVideo != "B")) {
+    if ((distance >= triggerDistance)&&(currentVideo != "B")) {
       timeStamp = millis();
       currentVideo = "B";
     }
@@ -163,7 +166,7 @@ void draw() {
     text("Current video: " + currentVideo,100,400);
 
 
-    if (millis() - calibratedTimestamp > 60000) {
+    if (millis() - calibratedTimestamp > 20000) {
       isShowingInformation = false;
     }
 
@@ -176,11 +179,15 @@ void draw() {
   if (video2.available()) video2.read();
   
   if (currentVideo == "A") {
+    // video1.play();
+    // video2.pause();
     image(video1, 0, 0, width, height);
     video1.volume(1);
     video2.volume(0);
   }
   if (currentVideo == "B") {
+    // video1.pause();
+    // video2.play();
     image(video2, 0, 0, width, height);
     video1.volume(0);
     video2.volume(1);

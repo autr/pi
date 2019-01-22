@@ -36,12 +36,22 @@ try:
             GPIO.output(PIN_TRIGGER, GPIO.LOW)
 
             maxTime = 400.0 / 17150.0
+            
+            loop_start_time = time.time()
+
+            # print ">"
+
+            skipped = ""
 
             while GPIO.input(PIN_ECHO)==0:
                   pulse_start_time = time.time()
+                  if ( (pulse_start_time - loop_start_time) > maxTime ):
+                        skipped = " START SKIPPED"
+                        break
             while GPIO.input(PIN_ECHO)==1:
                   pulse_end_time = time.time()
                   if ( (pulse_end_time - pulse_start_time) > maxTime ):
+                        skipped = " END SKIPPED"
                         pulse_end_time = pulse_start_time + maxTime
                         break
 
@@ -51,7 +61,7 @@ try:
             if (sendValue):
 
                   osc.send_message(b'/Ultrasonic', [distance])
-                  print "Distance:", distance, "cm"
+                  print "Distance:", distance, "cm", skipped
             else:
                   print "Skipping no returned echo"
 
