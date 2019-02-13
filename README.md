@@ -2,12 +2,10 @@
 
 ## Installation
 
-Available distros for Raspberry Pi 3B+
-
 * [Raspbian](https://www.raspberrypi.org/downloads/raspbian/)
 * [ArchLinux](https://www.archlinux.org/download/) / [Guide](https://archlinuxarm.org/platforms/armv8/broadcom/raspberry-pi-3) / [Phortx's Guide](https://github.com/phortx/Raspberry-Pi-Setup-Guide)
 * [Pi64](https://github.com/bamarni/pi64) 
-* (Gentoo 64bit RPi3)[https://github.com/sakaki-/gentoo-on-rpi3-64bit]
+* [Gentoo 64bit RPi3](https://github.com/sakaki-/gentoo-on-rpi3-64bit)
 
 ### Images & Cards
 

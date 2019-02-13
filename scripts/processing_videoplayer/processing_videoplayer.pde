@@ -7,11 +7,14 @@ OscP5 oscP5;
 GLMovie video1;
 GLMovie video2;
 
+float oscTimestamp = 0;
+boolean disableVideo = false;
+
 float distance = 0; // incoming sensor
 float triggerDistance = 0; //cm
 float smoothing = 0.8;
 
-float timeLimit = 1000; //milliseconds
+float timeLimit = 3000; //milliseconds
 float timeStamp = 0; // last change time
 
 String currentVideo = "A"; // video A or B
@@ -38,7 +41,7 @@ void setup() {
 
   fullScreen(P2D);
   
-  Process p = exec("/usr/bin/python /home/pi/pi/scripts/ultrasonic_osc.py"); 
+  //Process p = exec("/usr/bin/python /home/pi/pi/scripts/ultrasonic_osc.py"); 
   //size(200,200, P2D);
 
   oscP5 = new OscP5(this,7000);
@@ -58,11 +61,14 @@ void setup() {
     String pathA = videos[0].getAbsolutePath();
     String pathB = videos[1].getAbsolutePath();
 
+  if (!disableVideo) {
+
     video1 = new GLMovie(this, pathA, GLVideo.MUTE);
     video2 = new GLMovie(this, pathB, GLVideo.MUTE);
 
     video1.loop();
     video2.loop();
+  }
 
     println("Using videos", pathA, pathB);
   
@@ -72,11 +78,6 @@ void setup() {
 
   f = createFont("Arial",32,true); 
 
-  //GPIO.pinMode(triggerPin, GPIO.OUTPUT);
-  //GPIO.pinMode(echoPin, GPIO.INPUT);
-  
-  //GPIO.digitalWrite(triggerPin, GPIO.LOW);
-  //delay(2000);
   
 }
 
@@ -96,13 +97,18 @@ void getDistance() {
 void draw() {
 
 
-  //thread("getDistance");
 
   
   background(0);
   textFont(f,32);
-  fill(255);  
-  //text("GPIO dist: " + distGPIO,100,400);
+  fill(255); 
+
+
+  if (millis() - oscTimestamp > 4000) {
+    println("None", oscTimestamp);
+    distance =  (distance * smoothing) + (400.0 * (1 - smoothing));
+  }
+
 
   /*-- 1) No OSC messages received yet ... --*/
 
@@ -131,14 +137,12 @@ void draw() {
     return;
   }
 
+  /*-- 3) Get video A or B - needs 2 seconds of consistent distance to switch --*/
+
     
   if ( (millis() - timeStamp) > timeLimit) {
-    // if (proposedVideo != currentVideo) {
-    //   currentVideo = proposedVideo;
-    //   println("Trigger", currentVideo);
-    // }
+
     if ((distance < triggerDistance)&&(currentVideo != "A")) {
-      
       timeStamp = millis();
       currentVideo = "A";
     }
@@ -148,6 +152,8 @@ void draw() {
       currentVideo = "B";
     }
   }
+
+  /*-- 4) Show information --*/
 
 
   if (isShowingInformation) {
@@ -164,33 +170,42 @@ void draw() {
 
     fill(255);
     text("Current video: " + currentVideo,100,400);
-
-
-    if (millis() - calibratedTimestamp > 20000) {
-      isShowingInformation = false;
+    
+    
+    if (millis() - oscTimestamp < 500) {
+    
+      text("Live distance: " + str(distance) + "cm",100,500);
     }
+
+
+    //if (millis() - calibratedTimestamp > 20000) {
+    //  // isShowingInformation = false;
+    //}
 
     return;
   }
 
-  /*-- 3) Playback videos --*/
+  /*-- 5) Playback videos --*/
   
-  if (video1.available()) video1.read();
-  if (video2.available()) video2.read();
+  if (!disableVideo) {
   
-  if (currentVideo == "A") {
-    // video1.play();
-    // video2.pause();
-    image(video1, 0, 0, width, height);
-    video1.volume(1);
-    video2.volume(0);
-  }
-  if (currentVideo == "B") {
-    // video1.pause();
-    // video2.play();
-    image(video2, 0, 0, width, height);
-    video1.volume(0);
-    video2.volume(1);
+    if (video1.available()) video1.read();
+    if (video2.available()) video2.read();
+    
+    if (currentVideo == "A") {
+      // video1.play();
+      // video2.pause();
+      image(video1, 0, 0, width, height);
+      video1.volume(1);
+      video2.volume(0);
+    }
+    if (currentVideo == "B") {
+      // video1.pause();
+      // video2.play();
+      image(video2, 0, 0, width, height);
+      video1.volume(0);
+      video2.volume(1);
+    }
   }
 
 }
@@ -205,11 +220,22 @@ void oscEvent(OscMessage msg) {
       isReceiving = true;
       receivingTimestamp = millis();
     }
+    
+    oscTimestamp = millis();
+    println("get timestamp", oscTimestamp);
 
     distance =  (distance * smoothing) + (msg.get(0).floatValue() * (1 - smoothing));
   }
+  if (msg.checkAddrPattern("/Button")) {
+    isShowingInformation = !isShowingInformation;
+    
+  }
 }
 
+void stop() {
+    video1.close();
+    video2.close();
+}
 
 File[] fetchVideoFiles(String[] searchLocations, int maximum) {
   
