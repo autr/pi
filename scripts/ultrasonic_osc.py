@@ -35,7 +35,7 @@ try:
             time.sleep(0.0001)
             GPIO.output(PIN_TRIGGER, GPIO.LOW)
 
-            maxTime = 400.0 / 17150.0
+            maxTime = 300.0 / 17150.0
             
             loop_start_time = time.time()
 
