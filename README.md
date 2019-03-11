@@ -14,7 +14,7 @@
 * [ApplePi Baker](https://www.tweaking4all.com/software/macosx-software/macosx-apple-pi-baker/) - Mac
 * [PiBakery](https://www.pibakery.org/download.html) - Windows
 
-**Mac EX4**
+**Mac with EXT4**:
 
 The root partition of an image or card is in Linux fileformat EXT4. To mount EXT4 with read/write permissions in Mac, use either:
 
@@ -91,6 +91,18 @@ sudo mv pishrink.sh /usr/local/bin
 # Run
 
 sudo pishrink.sh [-s] imagefile.img [newimagefile.img]
+```
+
+**Corruption / Errors**
+
+* SD doesn't boot, or:
+* Cannot mount card
+
+```
+
+# Linux repair disk:
+sudo fsck /dev/sdX2
+
 ```
 
 ## Spring Cleaning
@@ -301,6 +313,26 @@ dpkg -l openssl
 sudo apt-get install openssl=1.0.2
 ```
 
+## CSI / Camera
+
+**Test camera device**
+
+```
+
+# Generic
+raspistill -t 0
+
+#PiCapture, send mode flag
+raspistill -t 0 -md 6
+
+```
+
+**Video input**
+
+* [PiCapture SD1](https://lintestsystems.com/products/picapture-sd1) - NTSE 640x480 only (PAL scaled), RGB, S-Video
+* [PiCapture HD1](https://lintestsystems.com/products/picapture-hd1) - HDMI, YPbPr, RGB
+* [ADV7282](https://www.analog.com/media/en/technical-documentation/data-sheets/adv7282.pdf)
+* [Video4Linux](https://linuxtv.org/downloads/v4l-dvb-apis/v4l-drivers/index.html)
   
 
 ## GPIO
